@@ -1,0 +1,207 @@
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using RevitMCPCommandSet.Models.Families;
+using RevitMCPCommandSet.Utils;
+using RevitMCPSDK.API.Interfaces;
+
+namespace RevitMCPCommandSet.Services.Families
+{
+    /// <summary>
+    /// Spike palier B (décision D3) : vraie édition de famille.
+    /// Séquence : EditFamily → transaction sur le document de FAMILLE
+    /// (FamilyManager.NewType + Set) → LoadFamily vers le projet → Close.
+    /// Le document de famille est fermé de façon GARANTIE (finally), même en
+    /// cas d'erreur, pour ne pas laisser de documents fantômes en mémoire.
+    /// Inéligible pour les familles système (IsEditable == false).
+    /// </summary>
+    public class EditFamilyAddTypeEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
+    {
+        public bool IsSuccess { get; private set; }
+        public string ErrorMessage { get; private set; }
+        public object Result { get; private set; }
+
+        private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+
+        // Paramètres d'entrée
+        public long FamilyId { get; set; }
+        public string NewTypeName { get; set; }
+        public List<ParameterValueSpec> Parameters { get; set; }
+
+        public bool WaitForCompletion(int timeoutMilliseconds = 60000)
+        {
+            _resetEvent.Reset();
+            return _resetEvent.WaitOne(timeoutMilliseconds);
+        }
+
+        public void Execute(UIApplication app)
+        {
+            IsSuccess = false;
+            ErrorMessage = null;
+            Result = null;
+            Document famDoc = null;
+            try
+            {
+                var doc = app.ActiveUIDocument?.Document;
+                if (doc == null)
+                {
+                    ErrorMessage = "aucun document actif dans Revit";
+                    return;
+                }
+
+                var family = doc.GetElement(FamilyParameterUtils.IdFromValue(FamilyId)) as Family;
+                if (family == null)
+                {
+                    ErrorMessage = $"aucune famille (Family) avec l'id {FamilyId}";
+                    return;
+                }
+
+                if (!family.IsEditable)
+                {
+                    ErrorMessage = "famille non éditable par EditFamily (famille système ?) — " +
+                                   "utiliser duplicate_family_type pour les types système";
+                    return;
+                }
+
+                string familyName = family.Name;
+                var appliedInfos = new List<AppliedParameterInfo>();
+                var skipped = new List<SkippedParameterInfo>();
+
+                // 1. Ouvre le document de famille en mémoire (jamais pendant une
+                //    transaction ouverte sur le document de projet).
+                famDoc = doc.EditFamily(family);
+
+                // 2. Transaction sur le document de FAMILLE.
+                var familyManager = famDoc.FamilyManager;
+                using (var transaction = new Transaction(famDoc, "MCP — Ajouter un type de famille"))
+                {
+                    transaction.Start();
+
+                    FamilyType newType = familyManager.NewType(NewTypeName);
+                    familyManager.CurrentType = newType;
+
+                    if (Parameters != null)
+                    {
+                        foreach (var spec in Parameters)
+                        {
+                            string label = spec.Name ?? spec.Id?.ToString() ?? "(sans nom ni id)";
+                            if (spec.Value == null)
+                            {
+                                skipped.Add(new SkippedParameterInfo { Name = label, Reason = "valeur absente" });
+                                continue;
+                            }
+
+                            var fp = FamilyParameterUtils.FindFamilyParameter(familyManager, spec);
+                            if (fp == null)
+                            {
+                                skipped.Add(new SkippedParameterInfo
+                                {
+                                    Name = label,
+                                    Reason = "paramètre introuvable dans la famille"
+                                });
+                                continue;
+                            }
+
+                            if (FamilyParameterUtils.TrySetFamilyParameter(familyManager, fp, spec.Value, out string reason))
+                            {
+                                appliedInfos.Add(new AppliedParameterInfo
+                                {
+                                    Id = fp.Id.GetValue(),
+                                    Name = fp.Definition?.Name
+                                });
+                            }
+                            else
+                            {
+                                skipped.Add(new SkippedParameterInfo
+                                {
+                                    Name = fp.Definition?.Name ?? label,
+                                    Reason = reason
+                                });
+                            }
+                        }
+                    }
+
+                    transaction.Commit();
+                }
+
+                // 3. Recharge la famille dans le projet (écrase les valeurs de
+                //    paramètres existantes — comportement assumé du spike).
+                Family loadedFamily = famDoc.LoadFamily(doc, new OverwriteFamilyLoadOptions());
+
+                // Retrouve l'id du nouveau FamilySymbol côté projet.
+                long? newTypeId = null;
+                if (loadedFamily != null)
+                {
+                    foreach (ElementId symbolId in loadedFamily.GetFamilySymbolIds())
+                    {
+                        if (doc.GetElement(symbolId) is FamilySymbol symbol && symbol.Name == NewTypeName)
+                        {
+                            newTypeId = symbolId.GetValue();
+                            break;
+                        }
+                    }
+                }
+
+                Result = new
+                {
+                    familyId = FamilyId,
+                    familyName,
+                    newTypeName = NewTypeName,
+                    newTypeId,
+                    applied = appliedInfos,
+                    skipped
+                };
+                IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+            finally
+            {
+                // 4. Fermeture GARANTIE du document de famille, succès ou échec.
+                if (famDoc != null)
+                {
+                    try
+                    {
+                        famDoc.Close(false);
+                    }
+                    catch
+                    {
+                        // Document déjà fermé ou invalide — rien à faire de plus.
+                    }
+                }
+
+                _resetEvent.Set();
+            }
+        }
+
+        public string GetName()
+        {
+            return "EditFamilyAddType";
+        }
+    }
+
+    /// <summary>
+    /// IFamilyLoadOptions du spike : recharge toujours la famille et écrase les
+    /// valeurs de paramètres du projet par celles du document de famille.
+    /// </summary>
+    public class OverwriteFamilyLoadOptions : IFamilyLoadOptions
+    {
+        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
+        {
+            overwriteParameterValues = true;
+            return true;
+        }
+
+        public bool OnSharedFamilyFound(
+            Family sharedFamily,
+            bool familyInUse,
+            out FamilySource source,
+            out bool overwriteParameterValues)
+        {
+            source = FamilySource.Family;
+            overwriteParameterValues = true;
+            return true;
+        }
+    }
+}
