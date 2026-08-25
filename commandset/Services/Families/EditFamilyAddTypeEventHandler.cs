@@ -145,19 +145,62 @@ namespace RevitMCPCommandSet.Services.Families
 
                 // 3. Recharge la famille dans le projet (écrase les valeurs de
                 //    paramètres existantes — comportement assumé du spike).
-                Family loadedFamily = famDoc.LoadFamily(doc, new OverwriteFamilyLoadOptions());
-
-                // Retrouve l'id du nouveau FamilySymbol côté projet.
-                long? newTypeId = null;
-                if (loadedFamily != null)
+                // LoadFamily peut lever une exception (« referenced object is
+                // not valid ») APRÈS avoir réellement rechargé la famille : on
+                // ne conclut à l'échec qu'après vérification de l'état réel.
+                Family loadedFamily = null;
+                string warning = null;
+                Exception erreurLoad = null;
+                try
                 {
-                    foreach (ElementId symbolId in loadedFamily.GetFamilySymbolIds())
+                    loadedFamily = famDoc.LoadFamily(doc, new OverwriteFamilyLoadOptions());
+                }
+                catch (Exception exLoad)
+                {
+                    erreurLoad = exLoad;
+                }
+
+                // Retrouve l'id du nouveau FamilySymbol côté projet. La Family
+                // renvoyée par LoadFamily (comme celle d'origine) peut être
+                // invalidée par le rechargement avec écrasement : re-résolution
+                // depuis le projet par l'id capturé.
+                long? newTypeId = null;
+                try
+                {
+                    var familleProjet =
+                        doc.GetElement(FamilyParameterUtils.IdFromValue(familyIdValue)) as Family
+                        ?? loadedFamily;
+                    if (familleProjet != null)
                     {
-                        if (doc.GetElement(symbolId) is FamilySymbol symbol && symbol.Name == NewTypeName)
+                        foreach (ElementId symbolId in familleProjet.GetFamilySymbolIds())
                         {
-                            newTypeId = symbolId.GetValue();
-                            break;
+                            if (doc.GetElement(symbolId) is FamilySymbol symbol && symbol.Name == NewTypeName)
+                            {
+                                newTypeId = symbolId.GetValue();
+                                break;
+                            }
                         }
+                    }
+                }
+                catch (Exception exRelecture)
+                {
+                    warning = "type créé et famille rechargée, mais relecture du nouveau type impossible : " +
+                              exRelecture.Message;
+                }
+
+                if (erreurLoad != null)
+                {
+                    if (newTypeId.HasValue)
+                    {
+                        // Le nouveau type est bien dans le projet : succès réel,
+                        // l'exception de LoadFamily n'était que du bruit.
+                        warning = $"LoadFamily a levé « {erreurLoad.Message} » mais le nouveau type " +
+                                  "est présent dans le projet — opération considérée réussie";
+                    }
+                    else
+                    {
+                        ErrorMessage = $"LoadFamily a échoué (étape rechargement) : {erreurLoad.Message}";
+                        return;
                     }
                 }
 
@@ -167,6 +210,7 @@ namespace RevitMCPCommandSet.Services.Families
                     familyName,
                     newTypeName = NewTypeName,
                     newTypeId,
+                    warning,
                     applied = appliedInfos,
                     skipped
                 };
