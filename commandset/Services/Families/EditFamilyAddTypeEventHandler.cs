@@ -22,8 +22,10 @@ namespace RevitMCPCommandSet.Services.Families
 
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
-        // Paramètres d'entrée
-        public long FamilyId { get; set; }
+        // Paramètres d'entrée — FamilyId (Family) ou TypeId (FamilySymbol,
+        // résolu en famille via symbol.Family) ; au moins un des deux.
+        public long? FamilyId { get; set; }
+        public long? TypeId { get; set; }
         public string NewTypeName { get; set; }
         public List<ParameterValueSpec> Parameters { get; set; }
 
@@ -48,11 +50,26 @@ namespace RevitMCPCommandSet.Services.Families
                     return;
                 }
 
-                var family = doc.GetElement(FamilyParameterUtils.IdFromValue(FamilyId)) as Family;
-                if (family == null)
+                Family family = null;
+                if (FamilyId.HasValue)
                 {
-                    ErrorMessage = $"aucune famille (Family) avec l'id {FamilyId}";
-                    return;
+                    family = doc.GetElement(FamilyParameterUtils.IdFromValue(FamilyId.Value)) as Family;
+                    if (family == null)
+                    {
+                        ErrorMessage = $"aucune famille (Family) avec l'id {FamilyId}";
+                        return;
+                    }
+                }
+                else
+                {
+                    var symbol = doc.GetElement(FamilyParameterUtils.IdFromValue(TypeId.Value)) as FamilySymbol;
+                    if (symbol == null)
+                    {
+                        ErrorMessage = $"aucun type de famille chargeable (FamilySymbol) avec l'id {TypeId} — " +
+                                       "pour un type système, utiliser duplicate_family_type";
+                        return;
+                    }
+                    family = symbol.Family;
                 }
 
                 if (!family.IsEditable)
@@ -143,7 +160,7 @@ namespace RevitMCPCommandSet.Services.Families
 
                 Result = new
                 {
-                    familyId = FamilyId,
+                    familyId = family.Id.GetValue(),
                     familyName,
                     newTypeName = NewTypeName,
                     newTypeId,

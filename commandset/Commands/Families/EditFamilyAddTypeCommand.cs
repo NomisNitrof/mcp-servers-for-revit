@@ -34,14 +34,16 @@ namespace RevitMCPCommandSet.Commands.Families
                 try
                 {
                     long? familyId = parameters?["familyId"]?.Value<long>();
-                    if (!familyId.HasValue)
-                        throw new ArgumentException("familyId est obligatoire");
+                    long? typeId = parameters?["typeId"]?.Value<long>();
+                    if (!familyId.HasValue && !typeId.HasValue)
+                        throw new ArgumentException("familyId ou typeId est obligatoire");
 
                     string newTypeName = parameters?["newTypeName"]?.Value<string>();
                     if (string.IsNullOrWhiteSpace(newTypeName))
                         throw new ArgumentException("newTypeName est obligatoire et non vide");
 
-                    _handler.FamilyId = familyId.Value;
+                    _handler.FamilyId = familyId;
+                    _handler.TypeId = typeId;
                     _handler.NewTypeName = newTypeName;
                     _handler.Parameters = parameters?["parameters"]?.ToObject<List<ParameterValueSpec>>();
 
