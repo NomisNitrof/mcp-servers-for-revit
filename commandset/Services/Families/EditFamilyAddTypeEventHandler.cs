@@ -79,7 +79,10 @@ namespace RevitMCPCommandSet.Services.Families
                     return;
                 }
 
+                // Capturés AVANT LoadFamily : le rechargement (overwrite)
+                // invalide la référence `family` d'origine.
                 string familyName = family.Name;
+                long familyIdValue = family.Id.GetValue();
                 var appliedInfos = new List<AppliedParameterInfo>();
                 var skipped = new List<SkippedParameterInfo>();
 
@@ -160,7 +163,7 @@ namespace RevitMCPCommandSet.Services.Families
 
                 Result = new
                 {
-                    familyId = family.Id.GetValue(),
+                    familyId = familyIdValue,
                     familyName,
                     newTypeName = NewTypeName,
                     newTypeId,
