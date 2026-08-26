@@ -129,6 +129,11 @@
       "assemblyPath": "RevitMCPCommandSet.dll"
     },
     {
+      "commandName": "list_element_parameters",
+      "description": "List instance parameters of a placed element in the project document (paginated)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
       "commandName": "duplicate_family_type",
       "description": "Duplicate a family or system type and optionally set parameters on the new type",
       "assemblyPath": "RevitMCPCommandSet.dll"
