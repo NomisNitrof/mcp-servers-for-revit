@@ -147,6 +147,31 @@
       "commandName": "edit_family_add_type",
       "description": "Add a new type to a loadable family via EditFamily/FamilyManager and reload it (extended timeout)",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "set_element_parameters",
+      "description": "Set instance parameters on a placed element in the project document",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "list_families",
+      "description": "List loadable families of the project with their familyId (filterable, limited)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "rename_family_type",
+      "description": "Rename a family or system type in the project document",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "delete_family_type",
+      "description": "Delete a family or system type; refuses without force when placed instances would be deleted",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "load_family",
+      "description": "Load a .rfa family file from disk into the project (overwrite if already loaded, extended timeout)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }
