@@ -71,21 +71,70 @@ namespace RevitMCPCommandSet.Utils
             return doc;
         }
 
-        /// <summary>Chemin absolu visible du fichier lié, ou null si indisponible.</summary>
-        public static string GetAbsolutePath(RevitLinkType linkType)
+        /// <summary>
+        /// Chemin absolu visible du fichier lié, ou null si indisponible —
+        /// avec la RAISON dans erreur plutôt qu'un null muet.
+        ///
+        /// Constaté le 2026-08-27 : sur quatre liens pourtant « Loaded », la
+        /// méthode d'instance GetExternalFileReference() ne rendait rien. On
+        /// passe donc d'abord par ExternalFileUtils, qui teste l'éligibilité
+        /// avant d'interroger, puis on retombe sur la méthode d'instance.
+        /// </summary>
+        public static string GetAbsolutePath(Document hostDoc, RevitLinkType linkType, out string erreur)
         {
-            try
+            erreur = null;
+            if (linkType == null)
             {
-                ExternalFileReference reference = linkType?.GetExternalFileReference();
-                if (reference == null)
-                    return null;
-                return ModelPathUtils.ConvertModelPathToUserVisiblePath(reference.GetAbsolutePath());
-            }
-            catch
-            {
-                // Lien jamais résolu ou référence externe absente : pas de chemin.
+                erreur = "type de lien (RevitLinkType) introuvable";
                 return null;
             }
+
+            // Voie 1 : utilitaire de document, avec test d'éligibilité.
+            try
+            {
+                if (hostDoc != null && ExternalFileUtils.IsExternalFileReference(hostDoc, linkType.Id))
+                {
+                    string chemin = CheminVisible(
+                        ExternalFileUtils.GetExternalFileReference(hostDoc, linkType.Id));
+                    if (!string.IsNullOrEmpty(chemin))
+                        return chemin;
+                }
+            }
+            catch (Exception ex)
+            {
+                erreur = "ExternalFileUtils : " + ex.Message;
+            }
+
+            // Voie 2 : méthode d'instance.
+            try
+            {
+                string chemin = CheminVisible(linkType.GetExternalFileReference());
+                if (!string.IsNullOrEmpty(chemin))
+                {
+                    erreur = null;
+                    return chemin;
+                }
+                if (erreur == null)
+                    erreur = "aucune référence de fichier externe exploitable " +
+                             "(lien nuagique, non résolu, ou chemin vide)";
+            }
+            catch (Exception ex)
+            {
+                erreur = (erreur == null ? "" : erreur + " ; ") +
+                         "GetExternalFileReference : " + ex.Message;
+            }
+            return null;
+        }
+
+        private static string CheminVisible(ExternalFileReference reference)
+        {
+            if (reference == null)
+                return null;
+            ModelPath chemin = reference.GetAbsolutePath();
+            if (chemin == null)
+                return null;
+            string visible = ModelPathUtils.ConvertModelPathToUserVisiblePath(chemin);
+            return string.IsNullOrWhiteSpace(visible) ? null : visible;
         }
 
         /// <summary>Statut de chargement du lien sous forme de chaîne, ou null.</summary>

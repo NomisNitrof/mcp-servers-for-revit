@@ -57,6 +57,7 @@ namespace RevitMCPCommandSet.Commands.Families
                     _handler.LinkId = parameters?["linkId"]?.Value<long>();
                     _handler.Category = category;
                     _handler.ParameterNames = noms;
+                    _handler.ExactCategory = parameters?["exactCategory"]?.Value<bool>() ?? false;
                     _handler.TypeFallback = parameters?["typeFallback"]?.Value<bool>() ?? true;
                     _handler.Offset = offset;
                     _handler.Limit = limit;

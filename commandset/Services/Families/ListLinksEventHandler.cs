@@ -53,13 +53,16 @@ namespace RevitMCPCommandSet.Services.Families
                 {
                     var linkType = doc.GetElement(instance.GetTypeId()) as RevitLinkType;
                     var linkDoc = instance.GetLinkDocument();
+                    string chemin = LinkUtils.GetAbsolutePath(doc, linkType, out string erreurChemin);
                     return new
                     {
                         linkId = instance.Id.GetValue(),
                         name = instance.Name,
                         typeId = instance.GetTypeId()?.GetValue(),
                         fileName = linkType?.Name,
-                        path = LinkUtils.GetAbsolutePath(linkType),
+                        path = chemin,
+                        // Pourquoi le chemin manque, plutôt qu'un null muet.
+                        pathError = erreurChemin,
                         status = LinkUtils.GetStatus(linkType),
                         // isLoaded : seul critère fiable pour savoir si le
                         // contenu du lien est interrogeable (linkId utilisable).

@@ -28,6 +28,7 @@ namespace RevitMCPCommandSet.Services.Families
         public long? LinkId { get; set; }
         public string Category { get; set; }
         public List<string> ParameterNames { get; set; }
+        public bool ExactCategory { get; set; }
         public bool TypeFallback { get; set; }
         public int Offset { get; set; }
         public int Limit { get; set; }
@@ -54,7 +55,7 @@ namespace RevitMCPCommandSet.Services.Families
                 var elements = new FilteredElementCollector(doc)
                     .WhereElementIsNotElementType()
                     .Where(e => e.Category != null)
-                    .Where(e => e.Category.Name.IndexOf(Category, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Where(e => CorrespondCategorie(e.Category.Name))
                     .OrderBy(e => e.Id.GetValue())
                     .ToList();
 
@@ -79,7 +80,7 @@ namespace RevitMCPCommandSet.Services.Families
                         valeurs[nom] = new
                         {
                             value = ExtraireValeur(p),
-                            display = p.StorageType == StorageType.Double ? p.AsValueString() : null
+                            display = FamilyParameterUtils.AffichageParametre(doc, p)
                         };
                     }
                     return new
@@ -169,6 +170,23 @@ namespace RevitMCPCommandSet.Services.Families
                 return (doc.GetElement(typeId) as ElementType)?.Name;
             }
             catch { return null; }
+        }
+
+
+        /// <summary>
+        /// Filtre de categorie. Par defaut par sous-chaine — pratique, mais
+        /// « Ossature » ramene aussi « Etiquettes d'ossature », ce qui fausse
+        /// un comptage. ExactCategory impose l'egalite stricte.
+        /// </summary>
+        private bool CorrespondCategorie(string nomCategorie)
+        {
+            if (string.IsNullOrEmpty(Category))
+                return true;
+            if (nomCategorie == null)
+                return false;
+            return ExactCategory
+                ? string.Equals(nomCategorie, Category, StringComparison.OrdinalIgnoreCase)
+                : nomCategorie.IndexOf(Category, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public string GetName()

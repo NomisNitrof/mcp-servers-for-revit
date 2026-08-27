@@ -71,7 +71,7 @@ namespace RevitMCPCommandSet.Services.Families
                         StorageType = p.StorageType.ToString(),
                         IsReadOnly = p.IsReadOnly,
                         Value = ExtractValue(p),
-                        Display = p.StorageType == StorageType.Double ? p.AsValueString() : null
+                        Display = FamilyParameterUtils.AffichageParametre(doc, p)
                     })
                     .ToList();
 

@@ -21,6 +21,37 @@ namespace RevitMCPCommandSet.Utils
 #endif
         }
 
+        /// <summary>
+        /// Valeur AFFICHABLE d'un parametre : chaine formatee pour les doubles,
+        /// et NOM de l'element reference pour les ElementId — un id brut
+        /// (« Niveau de reference = 60506 ») n'a aucun sens dans une table.
+        /// null quand il n'y a rien de plus lisible que la valeur brute.
+        /// </summary>
+        public static string AffichageParametre(Document doc, Parameter p)
+        {
+            try
+            {
+                if (p == null || !p.HasValue)
+                    return null;
+                switch (p.StorageType)
+                {
+                    case StorageType.Double:
+                        return p.AsValueString();
+                    case StorageType.ElementId:
+                        var id = p.AsElementId();
+                        if (id == null || id == ElementId.InvalidElementId)
+                            return null;
+                        return doc?.GetElement(id)?.Name;
+                    default:
+                        return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         // ------------------------------------------------------------------
         // Document de projet : Parameter sur un ElementType
         // ------------------------------------------------------------------

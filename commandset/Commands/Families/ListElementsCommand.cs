@@ -43,6 +43,7 @@ namespace RevitMCPCommandSet.Commands.Families
 
                     _handler.LinkId = parameters?["linkId"]?.Value<long>();
                     _handler.Category = parameters?["category"]?.Value<string>();
+                    _handler.ExactCategory = parameters?["exactCategory"]?.Value<bool>() ?? false;
                     _handler.Summarize = parameters?["summarize"]?.Value<bool>() ?? false;
                     _handler.Offset = offset;
                     _handler.Limit = limit;
