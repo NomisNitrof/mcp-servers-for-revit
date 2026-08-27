@@ -44,6 +44,8 @@ namespace RevitMCPCommandSet.Commands.Families
                     if (limit > MaxLimit)
                         limit = MaxLimit;
 
+                    // linkId optionnel : lire dans un modèle lié plutôt que dans l'hôte
+                    _handler.LinkId = parameters?["linkId"]?.Value<long>();
                     _handler.TypeId = typeId.Value;
                     _handler.Offset = offset;
                     _handler.Limit = limit;

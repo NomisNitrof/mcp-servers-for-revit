@@ -172,6 +172,16 @@
       "commandName": "load_family",
       "description": "Load a .rfa family file from disk into the project (overwrite if already loaded, extended timeout)",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "list_links",
+      "description": "List linked Revit models (RevitLinkInstance) with path, load status and pinning",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "list_elements",
+      "description": "List or count placed elements of the host document or of a linked model (linkId)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }

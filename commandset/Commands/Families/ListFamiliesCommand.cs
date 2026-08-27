@@ -37,6 +37,8 @@ namespace RevitMCPCommandSet.Commands.Families
                     if (limit > MaxLimit)
                         limit = MaxLimit;
 
+                    // linkId optionnel : lire dans un modèle lié plutôt que dans l'hôte
+                    _handler.LinkId = parameters?["linkId"]?.Value<long>();
                     _handler.NameFilter = parameters?["nameFilter"]?.Value<string>();
                     _handler.CategoryFilter = parameters?["categoryFilter"]?.Value<string>();
                     _handler.Limit = limit;

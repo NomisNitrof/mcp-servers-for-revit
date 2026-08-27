@@ -20,6 +20,8 @@ namespace RevitMCPCommandSet.Services.Families
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
         // Paramètres d'entrée
+        /// <summary>Id d'une occurrence de lien (list_links) pour lire DANS ce lien ; null = document hôte.</summary>
+        public long? LinkId { get; set; }
         public string NameFilter { get; set; }
         public string CategoryFilter { get; set; }
         public int Limit { get; set; }
@@ -37,10 +39,11 @@ namespace RevitMCPCommandSet.Services.Families
             Result = null;
             try
             {
-                var doc = app.ActiveUIDocument?.Document;
-                if (doc == null)
+                // Document cible : l'hôte, ou le document d'un lien si LinkId
+                // est fourni (lecture seule — voir LinkUtils).
+                if (!LinkUtils.TryResolveDocument(app, LinkId, out Document doc, out string erreurDoc))
                 {
-                    ErrorMessage = "aucun document actif dans Revit";
+                    ErrorMessage = erreurDoc;
                     return;
                 }
 
