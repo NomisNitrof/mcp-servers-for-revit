@@ -115,13 +115,48 @@ namespace RevitMCPCommandSet.Utils
                     return chemin;
                 }
                 if (erreur == null)
-                    erreur = "aucune référence de fichier externe exploitable " +
-                             "(lien nuagique, non résolu, ou chemin vide)";
+                    erreur = "aucune référence de fichier externe exploitable";
             }
             catch (Exception ex)
             {
                 erreur = (erreur == null ? "" : erreur + " ; ") +
                          "GetExternalFileReference : " + ex.Message;
+            }
+
+            // Voie 3 : ressource externe. Constaté le 2026-08-27 : un modèle
+            // hébergé dans le nuage (ACC / BIM 360) n'est PAS un fichier
+            // externe — « This Element does not represent an external file » —
+            // et son emplacement ne se lit que par ce chemin-là.
+            try
+            {
+                var ressources = linkType.GetExternalResourceReferences();
+                if (ressources != null)
+                {
+                    foreach (var couple in ressources)
+                    {
+                        var reference = couple.Value;
+                        if (reference == null)
+                            continue;
+                        if (!string.IsNullOrWhiteSpace(reference.InSessionPath))
+                        {
+                            erreur = null;
+                            return reference.InSessionPath;
+                        }
+                        // À défaut, la fiche d'identification de la ressource
+                        // (projet et modèle nuagiques) vaut mieux que rien.
+                        var infos = reference.GetReferenceInformation();
+                        if (infos != null && infos.Count > 0)
+                        {
+                            erreur = null;
+                            return string.Join(" | ", infos.Select(kv => kv.Key + "=" + kv.Value));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                erreur = (erreur == null ? "" : erreur + " ; ") +
+                         "GetExternalResourceReferences : " + ex.Message;
             }
             return null;
         }

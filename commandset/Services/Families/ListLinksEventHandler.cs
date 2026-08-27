@@ -63,6 +63,8 @@ namespace RevitMCPCommandSet.Services.Families
                         path = chemin,
                         // Pourquoi le chemin manque, plutôt qu'un null muet.
                         pathError = erreurChemin,
+                        // Un lien imbriqué n'est pas repointable directement.
+                        isNested = EstImbrique(linkType),
                         status = LinkUtils.GetStatus(linkType),
                         // isLoaded : seul critère fiable pour savoir si le
                         // contenu du lien est interrogeable (linkId utilisable).
@@ -88,6 +90,12 @@ namespace RevitMCPCommandSet.Services.Families
             {
                 _resetEvent.Set();
             }
+        }
+
+        private static bool? EstImbrique(RevitLinkType linkType)
+        {
+            try { return linkType?.IsNestedLink; }
+            catch { return null; }
         }
 
         public string GetName()
