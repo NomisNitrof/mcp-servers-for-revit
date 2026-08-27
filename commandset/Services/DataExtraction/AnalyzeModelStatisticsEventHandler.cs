@@ -1,6 +1,7 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.DataExtraction;
+using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
@@ -8,6 +9,9 @@ namespace RevitMCPCommandSet.Services.DataExtraction
     public class AnalyzeModelStatisticsEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
         private bool _includeDetailedTypes;
+
+        /// <summary>Id d'une occurrence de lien (list_links) pour extraire DEPUIS ce lien ; null = hote.</summary>
+        public long? LinkId { get; set; }
 
         public AnalyzeModelStatisticsResult ResultInfo { get; private set; }
         public bool TaskCompleted { get; private set; }
@@ -30,7 +34,7 @@ namespace RevitMCPCommandSet.Services.DataExtraction
         {
             try
             {
-                var doc = app.ActiveUIDocument.Document;
+                var doc = LinkUtils.ResolveDocumentOrThrow(app, LinkId);
 
                 // Get project name
                 string projectName = doc.Title;

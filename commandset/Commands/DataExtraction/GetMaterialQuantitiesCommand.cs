@@ -25,6 +25,8 @@ namespace RevitMCPCommandSet.Commands.DataExtraction
                 bool selectedElementsOnly = parameters?["selectedElementsOnly"]?.Value<bool>() ?? false;
 
                 // Set parameters
+                // linkId optionnel : extraire depuis un modele lie plutot que l'hote
+                _handler.LinkId = parameters?["linkId"]?.Value<long>();
                 _handler.SetParameters(categoryFilters, selectedElementsOnly);
 
                 // Execute and wait

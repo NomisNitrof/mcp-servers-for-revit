@@ -24,6 +24,8 @@ namespace RevitMCPCommandSet.Commands.DataExtraction
                 bool includeDetailedTypes = parameters?["includeDetailedTypes"]?.Value<bool>() ?? true;
 
                 // Set parameters
+                // linkId optionnel : extraire depuis un modele lie plutot que l'hote
+                _handler.LinkId = parameters?["linkId"]?.Value<long>();
                 _handler.SetParameters(includeDetailedTypes);
 
                 // Execute and wait

@@ -59,6 +59,18 @@ namespace RevitMCPCommandSet.Utils
             return true;
         }
 
+        /// <summary>
+        /// Variante levante, pour les handlers amont dont la gestion d'erreur
+        /// passe par le catch (résultat typé Success/Message) plutôt que par
+        /// un champ ErrorMessage.
+        /// </summary>
+        public static Document ResolveDocumentOrThrow(UIApplication app, long? linkId)
+        {
+            if (!TryResolveDocument(app, linkId, out Document doc, out string error))
+                throw new InvalidOperationException(error);
+            return doc;
+        }
+
         /// <summary>Chemin absolu visible du fichier lié, ou null si indisponible.</summary>
         public static string GetAbsolutePath(RevitLinkType linkType)
         {

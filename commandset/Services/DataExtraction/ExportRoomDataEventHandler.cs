@@ -2,12 +2,16 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.DataExtraction;
+using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
 {
     public class ExportRoomDataEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
+        /// <summary>Id d'une occurrence de lien (list_links) pour extraire DEPUIS ce lien ; null = hôte.</summary>
+        public long? LinkId { get; set; }
+
         private bool _includeUnplacedRooms;
         private bool _includeNotEnclosedRooms;
 
@@ -33,7 +37,7 @@ namespace RevitMCPCommandSet.Services.DataExtraction
         {
             try
             {
-                var doc = app.ActiveUIDocument.Document;
+                var doc = LinkUtils.ResolveDocumentOrThrow(app, LinkId);
                 var rooms = new List<RoomDataModel>();
                 double totalArea = 0;
 

@@ -1,6 +1,7 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitMCPCommandSet.Models.DataExtraction;
+using RevitMCPCommandSet.Utils;
 using RevitMCPSDK.API.Interfaces;
 
 namespace RevitMCPCommandSet.Services.DataExtraction
@@ -9,6 +10,9 @@ namespace RevitMCPCommandSet.Services.DataExtraction
     {
         private List<string> _categoryFilters;
         private bool _selectedElementsOnly;
+
+        /// <summary>Id d'une occurrence de lien (list_links) pour extraire DEPUIS ce lien ; null = hote.</summary>
+        public long? LinkId { get; set; }
 
         public GetMaterialQuantitiesResult ResultInfo { get; private set; }
         public bool TaskCompleted { get; private set; }
@@ -33,7 +37,13 @@ namespace RevitMCPCommandSet.Services.DataExtraction
             try
             {
                 var uiDoc = app.ActiveUIDocument;
-                var doc = uiDoc.Document;
+                // La voie « selection » lit des ids du document HOTE : incompatible
+                // avec un linkId, on refuse plutot que de renvoyer des elements nuls.
+                if (LinkId.HasValue && _selectedElementsOnly)
+                    throw new InvalidOperationException(
+                        "selectedElementsOnly ne s'applique qu'au document hote : la selection " +
+                        "Revit ne porte pas sur les elements d'un lien");
+                var doc = LinkUtils.ResolveDocumentOrThrow(app, LinkId);
 
                 // Dictionary to accumulate material quantities
                 var materialData = new Dictionary<ElementId, MaterialQuantityModel>();

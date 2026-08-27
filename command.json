@@ -182,6 +182,26 @@
       "commandName": "list_elements",
       "description": "List or count placed elements of the host document or of a linked model (linkId)",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "export_elements_table",
+      "description": "Export a table of elements: one row per element, one column per requested parameter (host or link)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_link_transform",
+      "description": "Get the total transform (origin and basis) of a linked model instance",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "list_link_levels_grids",
+      "description": "List levels and grids of a linked model (or of the host)",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "copy_elements_from_link",
+      "description": "Copy elements from a linked model into the host document, applying the link transform",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }
