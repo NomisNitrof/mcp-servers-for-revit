@@ -202,6 +202,21 @@
       "commandName": "copy_elements_from_link",
       "description": "Copy elements from a linked model into the host document, applying the link transform",
       "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "set_link_visibility",
+      "description": "Show or hide a Revit link instance in a view (active view by default); refuses a template-controlled view unless force",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "set_category_visibility",
+      "description": "Show or hide a category (by displayed name) in a view (active view by default); refuses a template-controlled view unless force",
+      "assemblyPath": "RevitMCPCommandSet.dll"
+    },
+    {
+      "commandName": "get_view_visibility",
+      "description": "Get a view's visibility state: template, link visibility, hidden categories",
+      "assemblyPath": "RevitMCPCommandSet.dll"
     }
   ]
 }
